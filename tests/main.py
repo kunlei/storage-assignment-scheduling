@@ -9,9 +9,5 @@ if __name__ == '__main__':
     order_file = os.path.join(data_dir, "order_data.csv")
     environment_file = os.path.join(data_dir, "environment.csv")
 
-    orders = pd.read_csv(order_file)
-    environment = pd.read_csv(environment_file)
-    print(environment)
-
     opt_service = OptService()
-    opt_service.optimize(environment, orders)
+    opt_service.optimize(environment_file, order_file)

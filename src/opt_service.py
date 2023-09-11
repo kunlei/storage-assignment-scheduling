@@ -28,7 +28,7 @@ class OptService:
         count = 500
         while start_idx <= len(orders):
             order_batch = data_center.get_order_batch(start_idx, count)
-
+            self._frame_assignment.optimize(order_batch)
             start_idx += count
 
         # process output

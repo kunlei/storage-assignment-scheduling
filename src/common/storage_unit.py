@@ -16,6 +16,8 @@ class StorageUnit:
         elif type < 0:
             self._type = UnitType.STATION
 
+        self._frame = -1
+
     @property
     def row_idx(self) -> int:
         return self._row_idx
@@ -27,6 +29,14 @@ class StorageUnit:
     @property
     def type(self) -> UnitType:
         return self._type
+
+    @property
+    def frame(self):
+        return self._frame
+
+    @frame.setter
+    def frame(self, value):
+        self._frame = value
 
     def __str__(self):
         return f"({self._row_idx}, {self._col_idx}, {self._type})"

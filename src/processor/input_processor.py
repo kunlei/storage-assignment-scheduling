@@ -4,6 +4,9 @@ import pandas as pd
 from src.common.frame import Frame
 from src.common.picking_station import PickingStation
 from src.common.storage_unit import StorageUnit
+from src.common.order import Order
+from src.common.data_center import DataCenter
+
 
 class InputProcessor:
 
@@ -23,7 +26,7 @@ class InputProcessor:
         print(env_df)
 
         stations = []
-        env = np.empty(shape=(num_rows, num_cols), dtype=StorageUnit)
+        env: np.array = np.empty(shape=(num_rows, num_cols), dtype=StorageUnit)
         for row_idx in range(num_rows):
             for col_idx in range(num_cols):
                 val = env_df.iloc[row_idx, col_idx]
@@ -37,10 +40,23 @@ class InputProcessor:
                     station = PickingStation(2, row_idx, col_idx)
                     stations.append(station)
 
-
-
         # process order lines
-        orders = pd.read_csv(order_file, parse_dates=True, date_format='%Y-%m-%d_%H:%M:%S')
-        orders.columns = ['arrival', 'departure', 'frame', 'station']
-        orders.sort_values(by=['arrival', 'departure'], inplace=True)
+        orders_df = pd.read_csv(order_file)
+        orders_df.columns = ['arrival', 'departure', 'frame', 'station']
+        orders_df['arrival'] = orders_df['arrival'].str.strip()
+        orders_df['arrival'] = pd.to_datetime(orders_df['arrival'], format='%Y-%m-%d_%H:%M:%S')
+        orders_df['departure'] = orders_df['departure'].str.strip()
+        orders_df['departure'] = pd.to_datetime(orders_df['departure'], format='%Y-%m-%d_%H:%M:%S')
+        orders_df.sort_values(by=['arrival', 'departure'], inplace=True)
+        print(orders_df)
+
+        orders = []
+        num_rows, num_cols = orders_df.shape
+        for row_idx in range(num_rows):
+                val = orders_df.iloc[row_idx]
+                order = Order(val['arrival'], val['departure'], val['frame'], val['station'])
+                orders.append(order)
         print(orders)
+
+        data_center = DataCenter(env, stations, orders)
+        return data_center

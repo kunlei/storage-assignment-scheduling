@@ -1,5 +1,4 @@
 
-
 class PickingStation:
 
     def __init__(self, station_id, row_idx, col_idx):
@@ -18,3 +17,6 @@ class PickingStation:
     @property
     def col_idx(self):
         return self._col_idx
+
+    def __str__(self):
+        return f"id: {self._id}, row_idx: {self._row_idx}, col_idx: {self._col_idx}"

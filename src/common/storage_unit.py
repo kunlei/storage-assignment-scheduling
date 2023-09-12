@@ -39,4 +39,4 @@ class StorageUnit:
         self._frame = value
 
     def __str__(self):
-        return f"({self._row_idx}, {self._col_idx}, {self._type})"
+        return f"({self._row_idx}, {self._col_idx}, {self._type}, {self._frame})"

@@ -27,6 +27,9 @@ class FrameAssignment:
             station = order.station_id
             station_dict[station] = station_dict[station] + 1
 
+        # all the frames
+        frames = self._data_center.frames
+
         # create solver
         solver = pywraplp.Solver.CreateSolver('SCIP')
 
@@ -34,9 +37,9 @@ class FrameAssignment:
         env = self._data_center.env
         num_rows, num_cols = env.shape
         var_assign = {}
-        for frame in frame_requests:
+        for frame in frames:
             var_assign[frame] = np.empty((num_rows, num_cols), dtype=object)
-        for f in frame_requests:
+        for f in frames:
             for row in range(num_rows):
                 for col in range(num_cols):
                     var_assign[f][row][col] = solver.BoolVar(name=f"x_{f},{row},{col}")
@@ -55,7 +58,7 @@ class FrameAssignment:
         solver.Minimize(solver.Sum(obj_expr))
 
         # constraint: each frame must be assigned to a storage unit
-        for f in frame_requests:
+        for f in frames:
             constr_expr = [
                 var_assign[f][row][col]
                 for row in range(num_rows)
@@ -70,7 +73,7 @@ class FrameAssignment:
                 if env[row][col].type == UnitType.STORAGE:
                     constr_expr = [
                         var_assign[f][row][col]
-                        for f in frame_requests
+                        for f in frames
                     ]
                     solver.Add(solver.Sum(constr_expr) <= 1)
 
@@ -80,7 +83,17 @@ class FrameAssignment:
             print('success')
             print(f"obj = {solver.Objective().Value()}")
 
+            opt_value = {}
+            for frame in frames:
+                for row in range(num_rows):
+                    for col in range(num_cols):
+                        if var_assign[frame][row][col].solution_value() > 0.99:
+                            opt_value[frame] = (row, col)
 
+            for frame in opt_value:
+                row, col = opt_value[frame]
+                env[row][col].frame = frame
+            print(opt_value)
 
     def init_frame_assignment(self):
         env = self._data_center.env

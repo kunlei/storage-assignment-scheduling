@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class DataCenter:
 
     def __init__(self, env, stations, orders):

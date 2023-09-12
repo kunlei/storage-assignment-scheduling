@@ -1,7 +1,6 @@
 import os
 
 from src.processor.input_processor import InputProcessor
-from src.processor.output_processor import OutputProcessor
 from src.model.frame_assignment import FrameAssignment
 from src.common.data_center import DataCenter
 
@@ -13,7 +12,6 @@ class OptService:
 
     def __init__(self):
         self._input_processor = InputProcessor()
-        self._output_processor = OutputProcessor()
         self._frame_assignment = None
 
     def optimize(self, environment_file, order_file):

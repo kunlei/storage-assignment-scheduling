@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-from src.common.frame import Frame
 from src.common.picking_station import PickingStation
 from src.common.storage_unit import StorageUnit
 from src.common.order import Order
@@ -21,9 +20,6 @@ class InputProcessor:
         env_df.replace(to_replace='PS2', value=-2, inplace=True)
         env_df = env_df.astype('int')
         num_rows, num_cols = env_df.shape
-        print(num_rows)
-        print(num_cols)
-        print(env_df)
 
         stations = []
         env: np.array = np.empty(shape=(num_rows, num_cols), dtype=StorageUnit)
@@ -48,7 +44,6 @@ class InputProcessor:
         orders_df['departure'] = orders_df['departure'].str.strip()
         orders_df['departure'] = pd.to_datetime(orders_df['departure'], format='%Y-%m-%d_%H:%M:%S')
         orders_df.sort_values(by=['arrival', 'departure'], inplace=True)
-        print(orders_df)
 
         orders = []
         num_rows, num_cols = orders_df.shape
@@ -56,7 +51,6 @@ class InputProcessor:
                 val = orders_df.iloc[row_idx]
                 order = Order(val['arrival'], val['departure'], val['frame'], val['station'])
                 orders.append(order)
-        print(orders)
 
         data_center = DataCenter(env, stations, orders)
         return data_center

@@ -19,7 +19,7 @@ There are some potential solutions to solve the storage assignment and schedulin
 \subsection{Dynamic Assignment and Scheduling}
 
 In the ideal case, storage assignment or reassignment could take place at the same time with order fulfillment.
-Starting with an initial, potentially randomized, storage plan, order lines could be continuously fulfilled by moving the frames to the picking stations.
+Starting with an initial, potentially randomized, storage plan, order lines could be continuously fulfilled by moving the requested frames to the picking stations.
 In the meantime, an optimization engine could look into the incoming order lines and recognize those orders with high volumes and re-assign those corresponding frames into storage units closer to the picking stations.
 There are a couple of challenges with this approach:
 
@@ -33,7 +33,7 @@ To reach a trully dynamic storage assignment and scheduling state would require 
 
 \subsection{Periodic Assignment and Scheduling}
 	
-An intermediate, or baseline, solution could be dividing the order lines into batches and separate storage assignment from scheduling into discreate time periods.
+An intermediate, or baseline, solution could be dividing the order lines into batches and separate storage assignment from scheduling into discrete and alternating time periods.
 Specifically, the workflow of this approach could be:
 
 \begin{enumerate}
@@ -47,11 +47,12 @@ Specifically, the workflow of this approach could be:
 		\end{enumerate}
 \end{enumerate}
 
+This periodic assignment and scheduling approach utilizes a rolling horizon-based optimization framework.
+It decomposes the original problem into smaller problems and alternatively solves two easier subproblems, namely, order batching and storage re-assignment.
 
+\subsubsection{Order batching}
 
-\subsubsection{Create order batches}
-
-The order batches could be of the same size or various sizes.
+The order batches could be of the same size or variable sizes.
 In addition, the generated order batches cannot be too small or too large.
 If the batches are too small, there would require frequent storage unit re-assignment; otherwise, the total travel distances of the frames might be too much if the order batches are too big.
 
@@ -61,11 +62,11 @@ If the batches are too small, there would require frequent storage unit re-assig
 The inputs to this problem are:
 
 \begin{itemize}
-	\item The existing storage configuration, denoted by $s_{ij}$
-	\item The distance between every storage unit $(i, j)$ to the picking stations $p$, denoted by $d_{ijp}$
+	\item The existing storage configuration, denoted by $e_{fij}$. Note that $e_{fij} = 1$ if the frame $f$ is assigned to storage unit at $(i, j)$ and 0 otherwise.
+	\item The distance between every storage unit $(i, j)$ to the picking stations $p$, denoted by $d_{ijp}$. It is assumed that the distance could be approximated using the Manhattan distance.
 	\item The next batch of order lines to be picked, denoted by $\mathcal{B}$
 		\begin{itemize}
-			\item All the frames required to fulfill the given order lines are denoted by $\mathcal{F}$
+			\item All the frames required to fulfill the given order lines are denoted by $\mathcal{F}_B \in \mathcal{F}$ where $\mathcal{F}$ is the set of all frames.
 			\item The number of orders required for frame $f$ by picking station $p$ is indicated by $n_{fp}$
 		\end{itemize}
 \end{itemize}
@@ -75,6 +76,7 @@ We define the following decision variables:
 
 \begin{itemize}
 	\item $x_{fij}$: a binary variable that equals 1 if the frame $f$ is assigned to the storage unit $(i, j)$; 0 otherwise
+	\item $y_{fij}$: a binary variable that equals 1 if the frame $f$ is assigned to a different storage unit; 0 otherwise
 \end{itemize}
 
 
@@ -82,16 +84,21 @@ The storage re-assignment problem could be modeled as:
 
 
 \begin{align}
-	\text{min.} &\quad \sum_{p \in \mathcal{P}} \sum_{(i, j)  \in \mathcal{S}} \sum_{f \in \mathcal{F}} x_{fij} \times d_{ijp} \times o_{fp} \label{obj} \\
+	\text{min.} &\quad \sum_{p \in \mathcal{P}} \sum_{(i, j)  \in \mathcal{S}} \sum_{f \in \mathcal{F}_B} x_{fij} \times d_{ijp} \times o_{fp} + \alpha \sum_{(i, j)  \in \mathcal{S}} \sum_{f \in \mathcal{F}} y_{fij} \label{obj} \\
 	\text{s.t.} &\quad \sum_{(i, j) \in \mathcal{S}} x_{fij} = 1, \ \forall f \in \mathcal{F} \label{frame-assign} \\
 	&\quad \sum_{f \in \mathcal{F}} x_{fij} \leq 1, \ \forall (i, j) \in \mathcal{S} \label{unit-cap} \\
-	&\quad x_{fij} \in \{0, 1\}, \ \forall f \in \mathcal{F}, (i, j) \in \mathcal{S} \label{var-type}
+	&\quad y_{fij} \geq x_{fij} - e_{fij}, \ \forall f \in \mathcal{F}, (i, j) \in \mathcal{S} \label{change-1} \\
+	&\quad y_{fij} \geq e_{fij} - x_{fij}, \ \forall f \in \mathcal{F}, (i, j) \in \mathcal{S} \label{change-2} \\
+	&\quad x_{fij}, y_{fij} \in \{0, 1\}, \ \forall f \in \mathcal{F}, (i, j) \in \mathcal{S} \label{var-type}
 \end{align}
 
-In this formulation, the objective function \eqref{obj} tries to minimize the total traveling distance of all the frames that are required to fufilled the next batch of order lines.
+In this formulation, the objective function \eqref{obj} tries to minimize two components: 1) the total traveling distance of all the frames that are required to fufilled the next batch of order lines. 2) the number of re-assignments, where $\alpha$ is the weight given to the second objective.
+A bigger $\alpha$ value will discourage moving too many frames at a time.
 Constraints \eqref{frame-assign} make sure that a frame must be assigned to one and only one storage unit.
 Constraints \eqref{unit-cap} ensure that each storage unit can hold at most one frame.
 Constraints \eqref{var-type} define the variable types.
 
+
+Note on runtime: the problem considered here is NP-hard and there generally does not exist solution algorithms that run in linear time. The solving time increases exponentially with problem size.
 	
 \end{document}

@@ -12,15 +12,15 @@ class DataCenter:
         self._frame_assignments: dict = {}
 
     @property
-    def env(self):
+    def env(self) -> np.array:
         return self._env
 
     @property
-    def stations(self):
+    def stations(self) -> list:
         return self._stations
 
     @property
-    def orders(self):
+    def orders(self) -> list:
         return self._orders
 
     @property
@@ -30,6 +30,10 @@ class DataCenter:
     @property
     def frame_assignments(self) -> dict:
         return self._frame_assignments
+
+    @frame_assignments.setter
+    def frame_assignments(self, value) -> None:
+        self._frame_assignments = value
 
     def get_order_batch(self, start_idx: int, count: int) -> list:
         res = []

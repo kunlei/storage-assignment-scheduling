@@ -37,12 +37,15 @@ class FrameAssignment:
         env = self._data_center.env
         num_rows, num_cols = env.shape
         var_assign = {}
+        var_move = {}
         for frame in frames:
             var_assign[frame] = np.empty((num_rows, num_cols), dtype=object)
+            var_move[frame] = np.empty((num_rows, num_cols), dtype=object)
         for f in frames:
             for row in range(num_rows):
                 for col in range(num_cols):
                     var_assign[f][row][col] = solver.BoolVar(name=f"x_{f},{row},{col}")
+                    var_move[f][row][col] = solver.BoolVar(name=f"y_{f},{row},{col}")
 
         # create objective function
         stations: list[PickingStation] = self._data_center.stations
@@ -55,6 +58,11 @@ class FrameAssignment:
                         distance = abs(station.row_idx - row) + abs(station.col_idx - col)
                         requests = picking_requests[station.id]
                         obj_expr.append(var_assign[f][row][col] * distance * requests)
+        alpha = 1.0
+        for f in frames:
+            for row in range(num_rows):
+                for col in range(num_cols):
+                    obj_expr.append(alpha * var_move[f][row][col])
         solver.Minimize(solver.Sum(obj_expr))
 
         # constraint: each frame must be assigned to a storage unit
@@ -77,25 +85,47 @@ class FrameAssignment:
                     ]
                     solver.Add(solver.Sum(constr_expr) <= 1)
 
+        # derive move variables
+        frame_assignments = self._data_center.frame_assignments
+        for f in frames:
+            curr_row, curr_col = frame_assignments[f]
+            for row in range(num_rows):
+                for col in range(num_cols):
+                    exists = 1 if (row == curr_row) and (col == curr_col) else 0
+                    solver.Add(var_move[f][row][col] >= exists - var_assign[f][row][col])
+                    solver.Add(var_move[f][row][col] >= var_assign[f][row][col] - exists)
+
         # solve
         status = solver.Solve()
         if status == pywraplp.Solver.OPTIMAL:
-            print('success')
-            print(f"obj = {solver.Objective().Value()}")
+            print('re-assignment problem solved successfully!')
+            print(f"optimal solution value = {solver.Objective().Value()}")
 
-            opt_value = {}
+            new_frame_assignments = {}
             for frame in frames:
                 for row in range(num_rows):
                     for col in range(num_cols):
                         if var_assign[frame][row][col].solution_value() > 0.99:
-                            opt_value[frame] = (row, col)
+                            new_frame_assignments[frame] = (row, col)
+            old_frame_assignments = self._data_center.frame_assignments
+            print(f"show changed frame positions: ")
+            for frame in frames:
+                if new_frame_assignments[frame] != old_frame_assignments[frame]:
+                    print(f"frame: {frame}: position change: {old_frame_assignments[frame]} -> {new_frame_assignments[frame]}")
 
-            for frame in opt_value:
-                row, col = opt_value[frame]
+            self._data_center.frame_assignments = new_frame_assignments
+
+            for frame in new_frame_assignments:
+                row, col = new_frame_assignments[frame]
                 env[row][col].frame = frame
-            print(opt_value)
+            print(f"show storage plans: ")
+            print(new_frame_assignments)
+            print("\n\n\n")
 
-    def init_frame_assignment(self):
+    def init_frame_assignment(self) -> None:
+        """
+        this function randomly assigns a frame into an available storage unit
+        """
         env = self._data_center.env
         num_rows, num_cols = env.shape
         frames = self._data_center.frames

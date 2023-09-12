@@ -1,4 +1,3 @@
-import pandas as pd
 import os
 
 from src.processor.input_processor import InputProcessor
@@ -8,6 +7,9 @@ from src.common.data_center import DataCenter
 
 
 class OptService:
+    """
+    this is the optimization interface
+    """
 
     def __init__(self):
         self._input_processor = InputProcessor()
@@ -16,7 +18,7 @@ class OptService:
 
     def optimize(self, environment_file, order_file):
         # process input data
-        data_center = self._input_processor.process(environment_file, order_file)
+        data_center: DataCenter = self._input_processor.process(environment_file, order_file)
 
         # initialize frame assignments
         self._frame_assignment = FrameAssignment(data_center)
@@ -30,7 +32,3 @@ class OptService:
             order_batch = data_center.get_order_batch(start_idx, count)
             self._frame_assignment.optimize(order_batch)
             start_idx += count
-
-        # process output
-
-        pass
